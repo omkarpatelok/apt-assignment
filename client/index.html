@@ -1,0 +1,1101 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+    <title>APT — Real-time Trade Orders | Atypical Technologies</title>
+    <meta name="description" content="APT Real-time Trade Order Dashboard — AI-Powered Algorithmic Trading Platform for Brokers by Atypical Technologies Pvt Ltd" />
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet">
+    <style>
+        :root {
+            --bg-primary: #06080f;
+            --bg-secondary: #0c1021;
+            --bg-panel: rgba(13, 17, 35, 0.75);
+            --bg-input: #080c1a;
+            --border: rgba(56, 68, 114, 0.35);
+            --border-glow: rgba(59, 130, 246, 0.15);
+            --text-primary: #e8ecf4;
+            --text-secondary: #7b8ab8;
+            --text-muted: #4a5578;
+            --accent-blue: #3b82f6;
+            --accent-blue-dim: rgba(59, 130, 246, 0.12);
+            --accent-green: #10b981;
+            --accent-green-dim: rgba(16, 185, 129, 0.12);
+            --accent-red: #ef4444;
+            --accent-red-dim: rgba(239, 68, 68, 0.12);
+            --accent-amber: #f59e0b;
+            --accent-amber-dim: rgba(245, 158, 11, 0.12);
+            --accent-purple: #8b5cf6;
+            --gradient-brand: linear-gradient(135deg, #3b82f6 0%, #8b5cf6 50%, #06b6d4 100%);
+            --font-sans: 'Inter', -apple-system, BlinkMacSystemFont, sans-serif;
+            --font-mono: 'JetBrains Mono', 'Fira Code', monospace;
+            --radius-sm: 8px;
+            --radius-md: 12px;
+            --radius-lg: 16px;
+            --shadow-card: 0 4px 24px rgba(0, 0, 0, 0.3), 0 0 0 1px var(--border);
+            --shadow-glow-blue: 0 0 20px rgba(59, 130, 246, 0.15);
+            --shadow-glow-green: 0 0 20px rgba(16, 185, 129, 0.15);
+        }
+
+        * { box-sizing: border-box; margin: 0; padding: 0; }
+
+        body {
+            font-family: var(--font-sans);
+            background: var(--bg-primary);
+            color: var(--text-primary);
+            min-height: 100vh;
+            overflow-x: hidden;
+        }
+
+        /* ── Ambient background ── */
+        body::before {
+            content: '';
+            position: fixed;
+            top: -50%; left: -50%;
+            width: 200%; height: 200%;
+            background: radial-gradient(ellipse at 20% 20%, rgba(59, 130, 246, 0.06) 0%, transparent 50%),
+                        radial-gradient(ellipse at 80% 80%, rgba(139, 92, 246, 0.04) 0%, transparent 50%),
+                        radial-gradient(ellipse at 50% 50%, rgba(6, 182, 212, 0.03) 0%, transparent 50%);
+            pointer-events: none;
+            z-index: 0;
+        }
+
+        /* ── Header ── */
+        .header {
+            position: relative;
+            z-index: 10;
+            padding: 20px 32px;
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            border-bottom: 1px solid var(--border);
+            background: rgba(6, 8, 15, 0.85);
+            backdrop-filter: blur(20px);
+            -webkit-backdrop-filter: blur(20px);
+        }
+
+        .header-left {
+            display: flex;
+            align-items: center;
+            gap: 16px;
+        }
+
+        .logo {
+            font-size: 1.8rem;
+            font-weight: 800;
+            letter-spacing: -0.03em;
+            background: var(--gradient-brand);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            background-clip: text;
+        }
+
+        .logo-divider {
+            width: 1px;
+            height: 32px;
+            background: var(--border);
+        }
+
+        .brand-info {
+            display: flex;
+            flex-direction: column;
+            gap: 2px;
+        }
+
+        .brand-name {
+            font-size: 0.72rem;
+            font-weight: 600;
+            color: var(--text-secondary);
+            letter-spacing: 0.08em;
+            text-transform: uppercase;
+        }
+
+        .brand-tagline {
+            font-size: 0.65rem;
+            color: var(--text-muted);
+            letter-spacing: 0.02em;
+        }
+
+        .header-right {
+            display: flex;
+            align-items: center;
+            gap: 14px;
+        }
+
+        .connection-status {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            padding: 6px 14px;
+            border-radius: 20px;
+            background: rgba(16, 185, 129, 0.08);
+            border: 1px solid rgba(16, 185, 129, 0.2);
+            transition: all 0.4s ease;
+        }
+
+        .connection-status.disconnected {
+            background: rgba(239, 68, 68, 0.08);
+            border-color: rgba(239, 68, 68, 0.2);
+        }
+
+        #status-dot {
+            width: 8px;
+            height: 8px;
+            border-radius: 50%;
+            background: var(--text-muted);
+            transition: all 0.4s ease;
+        }
+
+        #status-dot.connected {
+            background: var(--accent-green);
+            box-shadow: 0 0 8px var(--accent-green), 0 0 16px rgba(16, 185, 129, 0.3);
+            animation: pulse-green 2s ease-in-out infinite;
+        }
+
+        #status-dot.disconnected {
+            background: var(--accent-red);
+            box-shadow: 0 0 8px var(--accent-red);
+        }
+
+        @keyframes pulse-green {
+            0%, 100% { box-shadow: 0 0 8px var(--accent-green), 0 0 16px rgba(16, 185, 129, 0.3); }
+            50% { box-shadow: 0 0 12px var(--accent-green), 0 0 24px rgba(16, 185, 129, 0.5); }
+        }
+
+        #status-text {
+            font-size: 0.7rem;
+            font-weight: 500;
+            color: var(--text-secondary);
+            font-family: var(--font-mono);
+            letter-spacing: 0.02em;
+        }
+
+        /* ── Main Layout ── */
+        .main {
+            position: relative;
+            z-index: 1;
+            max-width: 1280px;
+            margin: 0 auto;
+            padding: 28px 32px 48px;
+            display: flex;
+            flex-direction: column;
+            gap: 24px;
+        }
+
+        .grid-2 {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 24px;
+        }
+
+        /* ── Panels ── */
+        .panel {
+            background: var(--bg-panel);
+            border: 1px solid var(--border);
+            border-radius: var(--radius-lg);
+            padding: 24px;
+            backdrop-filter: blur(16px);
+            -webkit-backdrop-filter: blur(16px);
+            box-shadow: var(--shadow-card);
+            transition: border-color 0.3s ease, box-shadow 0.3s ease;
+        }
+
+        .panel:hover {
+            border-color: rgba(56, 68, 114, 0.55);
+        }
+
+        .panel-header {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            margin-bottom: 18px;
+        }
+
+        .panel-title {
+            font-size: 0.75rem;
+            font-weight: 600;
+            color: var(--text-secondary);
+            letter-spacing: 0.1em;
+            text-transform: uppercase;
+            display: flex;
+            align-items: center;
+            gap: 8px;
+        }
+
+        .panel-title-icon {
+            width: 18px;
+            height: 18px;
+            border-radius: 5px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 0.7rem;
+        }
+
+        .panel-count {
+            font-family: var(--font-mono);
+            font-size: 0.7rem;
+            color: var(--text-muted);
+            background: var(--bg-input);
+            padding: 2px 8px;
+            border-radius: 6px;
+            border: 1px solid var(--border);
+        }
+
+        /* ── Form ── */
+        .form-grid {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 12px;
+        }
+
+        .form-group {
+            display: flex;
+            flex-direction: column;
+            gap: 5px;
+        }
+
+        .form-group.full-width {
+            grid-column: 1 / -1;
+        }
+
+        .form-label {
+            font-size: 0.68rem;
+            font-weight: 500;
+            color: var(--text-muted);
+            text-transform: uppercase;
+            letter-spacing: 0.08em;
+        }
+
+        input, select {
+            background: var(--bg-input);
+            border: 1px solid var(--border);
+            color: var(--text-primary);
+            padding: 10px 14px;
+            border-radius: var(--radius-sm);
+            font-size: 0.85rem;
+            font-family: var(--font-sans);
+            transition: border-color 0.3s ease, box-shadow 0.3s ease;
+            outline: none;
+            width: 100%;
+        }
+
+        input::placeholder {
+            color: var(--text-muted);
+        }
+
+        input:focus, select:focus {
+            border-color: var(--accent-blue);
+            box-shadow: 0 0 0 3px rgba(59, 130, 246, 0.1), var(--shadow-glow-blue);
+        }
+
+        select {
+            cursor: pointer;
+            appearance: none;
+            background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='12' viewBox='0 0 24 24' fill='none' stroke='%237b8ab8' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpolyline points='6 9 12 15 18 9'/%3E%3C/svg%3E");
+            background-repeat: no-repeat;
+            background-position: right 12px center;
+            padding-right: 32px;
+        }
+
+        select option {
+            background: var(--bg-secondary);
+            color: var(--text-primary);
+        }
+
+        .form-actions {
+            display: flex;
+            gap: 10px;
+            margin-top: 4px;
+        }
+
+        /* ── Buttons ── */
+        button {
+            font-family: var(--font-sans);
+            font-weight: 600;
+            font-size: 0.8rem;
+            padding: 10px 20px;
+            border-radius: var(--radius-sm);
+            border: none;
+            cursor: pointer;
+            transition: all 0.25s ease;
+            display: flex;
+            align-items: center;
+            gap: 6px;
+            letter-spacing: 0.01em;
+        }
+
+        .btn-buy {
+            background: linear-gradient(135deg, #3b82f6, #2563eb);
+            color: white;
+            box-shadow: 0 2px 12px rgba(59, 130, 246, 0.25);
+        }
+        .btn-buy:hover {
+            transform: translateY(-1px);
+            box-shadow: 0 4px 20px rgba(59, 130, 246, 0.35);
+        }
+
+        .btn-update {
+            background: rgba(139, 92, 246, 0.15);
+            color: #a78bfa;
+            border: 1px solid rgba(139, 92, 246, 0.3);
+        }
+        .btn-update:hover {
+            background: rgba(139, 92, 246, 0.25);
+            transform: translateY(-1px);
+        }
+
+        .btn-cancel {
+            background: rgba(239, 68, 68, 0.1);
+            color: #f87171;
+            border: 1px solid rgba(239, 68, 68, 0.25);
+        }
+        .btn-cancel:hover {
+            background: rgba(239, 68, 68, 0.2);
+            transform: translateY(-1px);
+        }
+
+        .btn-clear {
+            background: rgba(75, 85, 120, 0.15);
+            color: var(--text-secondary);
+            border: 1px solid var(--border);
+        }
+        .btn-clear:hover {
+            background: rgba(75, 85, 120, 0.25);
+        }
+
+        button:active { transform: translateY(0) scale(0.98); }
+
+        /* ── Events Feed ── */
+        #events-list {
+            max-height: 320px;
+            overflow-y: auto;
+            display: flex;
+            flex-direction: column;
+            gap: 8px;
+            scrollbar-width: thin;
+            scrollbar-color: var(--border) transparent;
+        }
+
+        #events-list::-webkit-scrollbar { width: 4px; }
+        #events-list::-webkit-scrollbar-track { background: transparent; }
+        #events-list::-webkit-scrollbar-thumb { background: var(--border); border-radius: 4px; }
+
+        .event-card {
+            background: var(--bg-input);
+            border-left: 3px solid var(--accent-blue);
+            border-radius: 6px;
+            padding: 12px 16px;
+            font-size: 0.82rem;
+            animation: slideIn 0.35s cubic-bezier(0.16, 1, 0.3, 1);
+            transition: background 0.2s ease;
+        }
+
+        .event-card:hover {
+            background: rgba(8, 12, 26, 0.9);
+        }
+
+        .event-card.INSERT { border-left-color: var(--accent-green); }
+        .event-card.UPDATE { border-left-color: var(--accent-amber); }
+        .event-card.DELETE { border-left-color: var(--accent-red); }
+
+        @keyframes slideIn {
+            from { opacity: 0; transform: translateY(-8px) scale(0.98); }
+            to   { opacity: 1; transform: translateY(0) scale(1); }
+        }
+
+        .event-top {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            margin-bottom: 6px;
+        }
+
+        .event-badges {
+            display: flex;
+            align-items: center;
+            gap: 6px;
+        }
+
+        .event-badge {
+            display: inline-block;
+            padding: 2px 8px;
+            border-radius: 4px;
+            font-size: 0.65rem;
+            font-weight: 700;
+            font-family: var(--font-mono);
+            letter-spacing: 0.04em;
+        }
+
+        .badge-INSERT { background: var(--accent-green-dim); color: var(--accent-green); }
+        .badge-UPDATE { background: var(--accent-amber-dim); color: var(--accent-amber); }
+        .badge-DELETE { background: var(--accent-red-dim); color: var(--accent-red); }
+
+        .badge-BUY {
+            background: var(--accent-blue-dim);
+            color: var(--accent-blue);
+        }
+
+        .badge-SELL {
+            background: var(--accent-red-dim);
+            color: var(--accent-red);
+        }
+
+        .event-time {
+            font-family: var(--font-mono);
+            font-size: 0.65rem;
+            color: var(--text-muted);
+        }
+
+        .event-body {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            color: var(--text-secondary);
+            font-size: 0.8rem;
+        }
+
+        .event-symbol {
+            font-weight: 600;
+            color: var(--text-primary);
+            font-family: var(--font-mono);
+        }
+
+        .event-detail {
+            color: var(--text-muted);
+            font-size: 0.75rem;
+        }
+
+        .event-price {
+            font-family: var(--font-mono);
+            font-weight: 500;
+            color: var(--text-primary);
+        }
+
+        /* ── Orders Table ── */
+        .table-wrap {
+            overflow-x: auto;
+            scrollbar-width: thin;
+            scrollbar-color: var(--border) transparent;
+        }
+
+        table {
+            width: 100%;
+            border-collapse: collapse;
+            font-size: 0.82rem;
+        }
+
+        th {
+            text-align: left;
+            padding: 10px 14px;
+            color: var(--text-muted);
+            font-weight: 600;
+            font-size: 0.7rem;
+            text-transform: uppercase;
+            letter-spacing: 0.08em;
+            border-bottom: 1px solid var(--border);
+            white-space: nowrap;
+        }
+
+        td {
+            padding: 12px 14px;
+            border-bottom: 1px solid rgba(56, 68, 114, 0.15);
+            transition: background 0.2s ease;
+            white-space: nowrap;
+        }
+
+        tr:last-child td { border-bottom: none; }
+
+        tr:hover td {
+            background: rgba(59, 130, 246, 0.03);
+        }
+
+        .cell-id {
+            font-family: var(--font-mono);
+            font-weight: 500;
+            color: var(--text-muted);
+            font-size: 0.78rem;
+        }
+
+        .cell-broker {
+            font-weight: 500;
+            color: var(--text-primary);
+        }
+
+        .cell-symbol {
+            font-family: var(--font-mono);
+            font-weight: 600;
+            color: var(--accent-blue);
+            letter-spacing: 0.02em;
+        }
+
+        .cell-type {
+            display: inline-block;
+            padding: 3px 10px;
+            border-radius: 4px;
+            font-size: 0.7rem;
+            font-weight: 700;
+            font-family: var(--font-mono);
+            letter-spacing: 0.04em;
+        }
+
+        .type-BUY {
+            background: var(--accent-blue-dim);
+            color: var(--accent-blue);
+        }
+
+        .type-SELL {
+            background: var(--accent-red-dim);
+            color: var(--accent-red);
+        }
+
+        .cell-qty {
+            font-family: var(--font-mono);
+            font-weight: 500;
+        }
+
+        .cell-price {
+            font-family: var(--font-mono);
+            font-weight: 600;
+            color: var(--text-primary);
+        }
+
+        .cell-price::before {
+            content: '₹';
+            color: var(--text-muted);
+            margin-right: 2px;
+            font-weight: 400;
+        }
+
+        .status-badge {
+            display: inline-flex;
+            align-items: center;
+            gap: 5px;
+            padding: 4px 12px;
+            border-radius: 20px;
+            font-size: 0.68rem;
+            font-weight: 600;
+            letter-spacing: 0.03em;
+        }
+
+        .status-PENDING {
+            background: var(--accent-amber-dim);
+            color: var(--accent-amber);
+        }
+
+        .status-PENDING::before {
+            content: '';
+            width: 6px;
+            height: 6px;
+            border-radius: 50%;
+            background: var(--accent-amber);
+            animation: blink 1.5s ease-in-out infinite;
+        }
+
+        @keyframes blink {
+            0%, 100% { opacity: 1; }
+            50% { opacity: 0.3; }
+        }
+
+        .status-EXECUTED {
+            background: var(--accent-green-dim);
+            color: var(--accent-green);
+        }
+
+        .status-EXECUTED::before {
+            content: '';
+            width: 6px;
+            height: 6px;
+            border-radius: 50%;
+            background: var(--accent-green);
+        }
+
+        .status-CANCELLED {
+            background: var(--accent-red-dim);
+            color: var(--accent-red);
+        }
+
+        .status-CANCELLED::before {
+            content: '';
+            width: 6px;
+            height: 6px;
+            border-radius: 50%;
+            background: var(--accent-red);
+        }
+
+        .cell-time {
+            font-family: var(--font-mono);
+            font-size: 0.75rem;
+            color: var(--text-muted);
+        }
+
+        /* ── Empty / Placeholder ── */
+        .empty {
+            color: var(--text-muted);
+            text-align: center;
+            padding: 32px;
+            font-size: 0.85rem;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            gap: 8px;
+        }
+
+        .empty-icon {
+            font-size: 1.8rem;
+            opacity: 0.4;
+        }
+
+        /* ── Footer ── */
+        .footer {
+            position: relative;
+            z-index: 10;
+            text-align: center;
+            padding: 20px 32px;
+            border-top: 1px solid var(--border);
+            font-size: 0.68rem;
+            color: var(--text-muted);
+            background: rgba(6, 8, 15, 0.6);
+            backdrop-filter: blur(12px);
+        }
+
+        .footer a {
+            color: var(--accent-blue);
+            text-decoration: none;
+        }
+
+        /* ── Responsive ── */
+        @media (max-width: 900px) {
+            .grid-2 { grid-template-columns: 1fr; }
+            .main { padding: 20px 16px 40px; }
+            .header { padding: 16px 20px; }
+            .form-grid { grid-template-columns: 1fr; }
+        }
+
+        @media (max-width: 600px) {
+            .brand-info { display: none; }
+            .logo-divider { display: none; }
+            .form-actions { flex-wrap: wrap; }
+            .form-actions button { flex: 1; min-width: 100px; justify-content: center; }
+        }
+    </style>
+</head>
+<body>
+
+<!-- Header -->
+<header class="header" id="app-header">
+    <div class="header-left">
+        <span class="logo">APT</span>
+        <div class="logo-divider"></div>
+        <div class="brand-info">
+            <span class="brand-name">Atypical Technologies Pvt Ltd</span>
+            <span class="brand-tagline">AI-Powered Algorithmic Trading for Brokers</span>
+        </div>
+    </div>
+    <div class="header-right">
+        <div class="connection-status" id="connection-wrap">
+            <div id="status-dot"></div>
+            <span id="status-text">Connecting...</span>
+        </div>
+    </div>
+</header>
+
+<main class="main">
+
+    <!-- Place Order Panel -->
+    <div class="panel" id="order-panel">
+        <div class="panel-header">
+            <span class="panel-title">
+                <span class="panel-title-icon" style="background: var(--accent-blue-dim); color: var(--accent-blue);">+</span>
+                Place Trade Order
+            </span>
+        </div>
+        <div class="form-grid">
+            <div class="form-group">
+                <label class="form-label" for="inp-broker">Broker Name</label>
+                <input id="inp-broker" type="text" placeholder="e.g. Omkar Patel" />
+            </div>
+            <div class="form-group">
+                <label class="form-label" for="inp-symbol">Symbol / Instrument</label>
+                <input id="inp-symbol" type="text" placeholder="e.g. NIFTY 50" list="symbols-list" />
+                <datalist id="symbols-list">
+                    <option value="NIFTY 50">
+                    <option value="BANKNIFTY">
+                    <option value="SENSEX">
+                    <option value="RELIANCE">
+                    <option value="TCS">
+                    <option value="HDFCBANK">
+                    <option value="INFY">
+                    <option value="ICICIBANK">
+                    <option value="SBIN">
+                    <option value="ITC">
+                    <option value="WIPRO">
+                    <option value="TATAMOTORS">
+                    <option value="ADANIENT">
+                    <option value="BAJFINANCE">
+                    <option value="TATASTEEL">
+                </datalist>
+            </div>
+            <div class="form-group">
+                <label class="form-label" for="inp-type">Order Type</label>
+                <select id="inp-type">
+                    <option value="BUY">BUY</option>
+                    <option value="SELL">SELL</option>
+                </select>
+            </div>
+            <div class="form-group">
+                <label class="form-label" for="inp-qty">Quantity</label>
+                <input id="inp-qty" type="number" placeholder="Lots / Shares" min="1" value="1" />
+            </div>
+            <div class="form-group">
+                <label class="form-label" for="inp-price">Price (₹)</label>
+                <input id="inp-price" type="number" placeholder="0.00" step="0.05" min="0" />
+            </div>
+            <div class="form-group">
+                <label class="form-label" for="inp-status">Status</label>
+                <select id="inp-status">
+                    <option value="PENDING">PENDING</option>
+                    <option value="EXECUTED">EXECUTED</option>
+                    <option value="CANCELLED">CANCELLED</option>
+                </select>
+            </div>
+            <div class="form-group">
+                <label class="form-label" for="inp-order-id">Order ID <span style="font-weight:400;color:var(--text-muted)">(for update / cancel)</span></label>
+                <input id="inp-order-id" type="number" placeholder="Enter order ID" min="1" />
+            </div>
+            <div class="form-group" style="justify-content: flex-end;">
+                <label class="form-label">&nbsp;</label>
+                <div class="form-actions">
+                    <button class="btn-buy" onclick="createOrder()" id="btn-place-order">⚡ Place Order</button>
+                    <button class="btn-update" onclick="updateOrder()" id="btn-update-order">✎ Modify</button>
+                    <button class="btn-cancel" onclick="deleteOrder()" id="btn-cancel-order">✕ Cancel</button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Live Events + Orders Table -->
+    <div class="grid-2">
+
+        <!-- Live Trade Events -->
+        <div class="panel" id="events-panel">
+            <div class="panel-header">
+                <span class="panel-title">
+                    <span class="panel-title-icon" style="background: var(--accent-green-dim); color: var(--accent-green);">⚡</span>
+                    Live Trade Events
+                </span>
+                <span class="panel-count" id="events-count">0 events</span>
+            </div>
+            <div id="events-list">
+                <div class="empty">
+                    <span class="empty-icon">📡</span>
+                    Waiting for trade activity...
+                </div>
+            </div>
+        </div>
+
+        <!-- Stats / Info Panel -->
+        <div class="panel" id="stats-panel">
+            <div class="panel-header">
+                <span class="panel-title">
+                    <span class="panel-title-icon" style="background: var(--accent-purple); color: white; font-size:0.6rem;">📊</span>
+                    Order Summary
+                </span>
+            </div>
+            <div id="stats-content" class="stats-grid">
+                <div class="empty">
+                    <span class="empty-icon">📈</span>
+                    Loading summary...
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Orders Table -->
+    <div class="panel" id="orders-panel">
+        <div class="panel-header">
+            <span class="panel-title">
+                <span class="panel-title-icon" style="background: var(--accent-amber-dim); color: var(--accent-amber);">☰</span>
+                Order Book
+            </span>
+            <span class="panel-count" id="orders-count">0 orders</span>
+        </div>
+        <div class="table-wrap" id="orders-table-wrap">
+            <div class="empty">
+                <span class="empty-icon">📋</span>
+                Loading order book...
+            </div>
+        </div>
+    </div>
+
+</main>
+
+<!-- Footer -->
+<footer class="footer">
+    APT — Atypical Technologies Pvt Ltd &nbsp;·&nbsp; Real-time Trade Order System &nbsp;·&nbsp; Powered by PostgreSQL LISTEN/NOTIFY + WebSockets
+</footer>
+
+<!-- Stats Styles (injected here to keep near the component) -->
+<style>
+    .stats-grid {
+        display: grid;
+        grid-template-columns: repeat(4, 1fr);
+        gap: 12px;
+    }
+
+    .stat-card {
+        background: var(--bg-input);
+        border: 1px solid var(--border);
+        border-radius: var(--radius-md);
+        padding: 16px;
+        text-align: center;
+        transition: border-color 0.3s ease, transform 0.2s ease;
+    }
+
+    .stat-card:hover {
+        border-color: rgba(56, 68, 114, 0.55);
+        transform: translateY(-2px);
+    }
+
+    .stat-value {
+        font-family: var(--font-mono);
+        font-size: 1.4rem;
+        font-weight: 700;
+        margin-bottom: 4px;
+    }
+
+    .stat-label {
+        font-size: 0.65rem;
+        color: var(--text-muted);
+        text-transform: uppercase;
+        letter-spacing: 0.08em;
+        font-weight: 600;
+    }
+
+    @media (max-width: 700px) {
+        .stats-grid { grid-template-columns: repeat(2, 1fr); }
+    }
+</style>
+
+<script>
+    // ── WebSocket Connection ──
+    let ws;
+    let eventCount = 0;
+
+    function connectWS() {
+        const protocol = location.protocol === 'https:' ? 'wss' : 'ws';
+        ws = new WebSocket(`${protocol}://${location.host}`);
+
+        ws.onopen = () => {
+            document.getElementById('status-dot').className = 'connected';
+            document.getElementById('status-text').textContent = 'LIVE';
+            document.getElementById('connection-wrap').classList.remove('disconnected');
+        };
+
+        ws.onmessage = (e) => {
+            const msg = JSON.parse(e.data);
+            if (msg.type === 'db_change') {
+                addEventCard(msg);
+                loadOrders();
+            }
+        };
+
+        ws.onclose = () => {
+            document.getElementById('status-dot').className = 'disconnected';
+            document.getElementById('status-text').textContent = 'DISCONNECTED';
+            document.getElementById('connection-wrap').classList.add('disconnected');
+            setTimeout(connectWS, 3000);
+        };
+
+        ws.onerror = () => ws.close();
+    }
+
+    // ── Live Events Feed ──
+    function addEventCard(msg) {
+        const list = document.getElementById('events-list');
+        if (list.querySelector('.empty')) list.innerHTML = '';
+
+        eventCount++;
+        document.getElementById('events-count').textContent = `${eventCount} event${eventCount !== 1 ? 's' : ''}`;
+
+        const op = msg.operation;
+        const d  = msg.data;
+        const time = new Date(msg.timestamp).toLocaleTimeString('en-IN', { hour12: false });
+
+        const card = document.createElement('div');
+        card.className = `event-card ${op}`;
+
+        const typeClass = d.order_type ? `badge-${d.order_type}` : '';
+        const priceStr = d.price ? `₹${parseFloat(d.price).toLocaleString('en-IN', { minimumFractionDigits: 2 })}` : '';
+
+        card.innerHTML = `
+            <div class="event-top">
+                <div class="event-badges">
+                    <span class="event-badge badge-${op}">${op}</span>
+                    ${d.order_type ? `<span class="event-badge ${typeClass}">${d.order_type}</span>` : ''}
+                </div>
+                <span class="event-time">${time}</span>
+            </div>
+            <div class="event-body">
+                <span class="event-symbol">${d.symbol || '—'}</span>
+                <span class="event-detail">${d.broker_name || ''} · ${d.quantity || 0} lots</span>
+                <span class="event-price">${priceStr}</span>
+            </div>`;
+
+        list.prepend(card);
+
+        while (list.children.length > 50) list.removeChild(list.lastChild);
+    }
+
+    // ── Order Book Table ──
+    async function loadOrders() {
+        try {
+            const res  = await fetch('/api/orders');
+            const data = await res.json();
+            const wrap = document.getElementById('orders-table-wrap');
+
+            if (!data.orders || data.orders.length === 0) {
+                wrap.innerHTML = '<div class="empty"><span class="empty-icon">📋</span>No orders in the book.</div>';
+                document.getElementById('orders-count').textContent = '0 orders';
+                updateStats([]);
+                return;
+            }
+
+            document.getElementById('orders-count').textContent = `${data.orders.length} order${data.orders.length !== 1 ? 's' : ''}`;
+
+            wrap.innerHTML = `
+                <table>
+                    <thead>
+                        <tr>
+                            <th>ID</th>
+                            <th>Broker</th>
+                            <th>Symbol</th>
+                            <th>Type</th>
+                            <th>Qty</th>
+                            <th>Price</th>
+                            <th>Status</th>
+                            <th>Updated</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        ${data.orders.map(o => `
+                            <tr>
+                                <td class="cell-id">#${o.id}</td>
+                                <td class="cell-broker">${o.broker_name}</td>
+                                <td class="cell-symbol">${o.symbol}</td>
+                                <td><span class="cell-type type-${o.order_type}">${o.order_type}</span></td>
+                                <td class="cell-qty">${o.quantity}</td>
+                                <td class="cell-price">${parseFloat(o.price).toLocaleString('en-IN', { minimumFractionDigits: 2 })}</td>
+                                <td><span class="status-badge status-${o.status}">${o.status}</span></td>
+                                <td class="cell-time">${new Date(o.updated_at).toLocaleString('en-IN', { hour12: false })}</td>
+                            </tr>`).join('')}
+                    </tbody>
+                </table>`;
+
+            updateStats(data.orders);
+        } catch (err) {
+            console.error('Failed to load orders:', err);
+        }
+    }
+
+    // ── Stats Panel ──
+    function updateStats(orders) {
+        const total = orders.length;
+        const pending  = orders.filter(o => o.status === 'PENDING').length;
+        const executed = orders.filter(o => o.status === 'EXECUTED').length;
+        const cancelled = orders.filter(o => o.status === 'CANCELLED').length;
+
+        const totalValue = orders.reduce((sum, o) => sum + (parseFloat(o.price) * parseInt(o.quantity)), 0);
+
+        document.getElementById('stats-content').innerHTML = `
+            <div class="stat-card">
+                <div class="stat-value" style="color: var(--accent-blue);">${total}</div>
+                <div class="stat-label">Total Orders</div>
+            </div>
+            <div class="stat-card">
+                <div class="stat-value" style="color: var(--accent-amber);">${pending}</div>
+                <div class="stat-label">Pending</div>
+            </div>
+            <div class="stat-card">
+                <div class="stat-value" style="color: var(--accent-green);">${executed}</div>
+                <div class="stat-label">Executed</div>
+            </div>
+            <div class="stat-card">
+                <div class="stat-value" style="color: var(--accent-red);">${cancelled}</div>
+                <div class="stat-label">Cancelled</div>
+            </div>`;
+    }
+
+    // ── API Actions ──
+    async function createOrder() {
+        const body = {
+            broker_name: document.getElementById('inp-broker').value.trim(),
+            symbol:      document.getElementById('inp-symbol').value.trim().toUpperCase(),
+            order_type:  document.getElementById('inp-type').value,
+            quantity:    parseInt(document.getElementById('inp-qty').value) || 1,
+            price:       parseFloat(document.getElementById('inp-price').value) || 0,
+            status:      document.getElementById('inp-status').value
+        };
+
+        if (!body.broker_name || !body.symbol) {
+            return alert('Broker Name and Symbol are required');
+        }
+
+        await fetch('/api/orders', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify(body)
+        });
+
+        clearForm();
+    }
+
+    async function updateOrder() {
+        const id = document.getElementById('inp-order-id').value.trim();
+        if (!id) return alert('Enter an Order ID to modify');
+
+        const body = {
+            broker_name: document.getElementById('inp-broker').value.trim() || undefined,
+            symbol:      document.getElementById('inp-symbol').value.trim().toUpperCase() || undefined,
+            order_type:  document.getElementById('inp-type').value,
+            quantity:    parseInt(document.getElementById('inp-qty').value) || undefined,
+            price:       parseFloat(document.getElementById('inp-price').value) || undefined,
+            status:      document.getElementById('inp-status').value
+        };
+
+        await fetch(`/api/orders/${id}`, {
+            method: 'PATCH',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify(body)
+        });
+
+        clearForm();
+    }
+
+    async function deleteOrder() {
+        const id = document.getElementById('inp-order-id').value.trim();
+        if (!id) return alert('Enter an Order ID to cancel');
+        if (!confirm(`Cancel order #${id}?`)) return;
+
+        await fetch(`/api/orders/${id}`, { method: 'DELETE' });
+        clearForm();
+    }
+
+    function clearForm() {
+        document.getElementById('inp-broker').value = '';
+        document.getElementById('inp-symbol').value = '';
+        document.getElementById('inp-type').value = 'BUY';
+        document.getElementById('inp-qty').value = '1';
+        document.getElementById('inp-price').value = '';
+        document.getElementById('inp-status').value = 'PENDING';
+        document.getElementById('inp-order-id').value = '';
+    }
+
+    // ── Init ──
+    connectWS();
+    loadOrders();
+</script>
+</body>
+</html>
