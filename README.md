@@ -4,7 +4,6 @@ A backend system that pushes database changes to connected clients in real-time,
 
 ---
 
-<<<<<<< HEAD
 ## The Problem
 
 How do you tell clients something changed in the database, without making them constantly ask?
@@ -24,36 +23,10 @@ DB change (INSERT / UPDATE / DELETE on orders)
     → Node.js listenerClient receives 'notification' event
     → broadcast() pushes JSON to all connected WebSocket clients
     → Browser UI updates in real-time (no page refresh)
-=======
-## The Problem I Was Solving
-
-The core challenge was: *how do you tell clients something changed in the database, without making them constantly ask?*
-
-The naive solution is polling — every client sends a request every N seconds asking "anything new?". It works, but it's wasteful. If 100 clients are connected and polling every 2 seconds, that's 3000 requests per minute hitting your database, most of which return nothing useful.
-
-I wanted a push-based system. The database tells the server when something changes, and the server immediately tells all connected clients.
-
----
-
-## My Approach
-
-**PostgreSQL LISTEN/NOTIFY + WebSockets**
-
-Here's the flow:
-
-```
-DB change (INSERT/UPDATE/DELETE)
-    → Postgres trigger fires
-    → NOTIFY sent on 'orders_channel' with JSON payload
-    → Node.js listener client receives it
-    → Broadcasts to all connected WebSocket clients
-    → Browser UI updates in real-time
->>>>>>> 23f7a48b1fee03942acae4c7a1ac3fcc949b55d6
 ```
 
 ### Why PostgreSQL LISTEN/NOTIFY?
 
-<<<<<<< HEAD
 I evaluated three approaches:
 
 | Option | Mechanism | Verdict |
@@ -86,23 +59,6 @@ CREATE TABLE orders (
     updated_at    TIMESTAMP    NOT NULL DEFAULT NOW()
 );
 ```
-=======
-I considered three options:
-
-**Option 1: Polling** — Client requests every few seconds. Simple but wasteful. Rejected.
-
-**Option 2: Debezium / CDC tools** — Reads Postgres WAL (write-ahead log) for changes. Very powerful, used in production at scale. But heavyweight for this assignment — requires Kafka or similar infrastructure.
-
-**Option 3: LISTEN/NOTIFY** — Built directly into Postgres. No extra infrastructure needed. The trigger runs inside the DB transaction itself, so notifications are guaranteed to fire when data changes. Clean, efficient, and well-suited to this problem.
-
-I went with Option 3. For the scale of this assignment, it's the right tool — simple, reliable, and easy to reason about.
-
-### Why WebSockets over SSE or Long Polling?
-
-- **WebSockets** give a persistent, full-duplex connection. Perfect for real-time push.
-- **SSE (Server-Sent Events)** would also work for one-way push, but WebSockets are more flexible if we later need bidirectional communication (e.g. client sending commands).
-- **Long polling** is a workaround, not a real solution.
->>>>>>> 23f7a48b1fee03942acae4c7a1ac3fcc949b55d6
 
 ---
 
