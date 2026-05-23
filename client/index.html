@@ -1,0 +1,449 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>APT — Real-time Order Tracker</title>
+  <style>
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+    :root {
+      --bg:        #0f1117;
+      --surface:   #1a1d27;
+      --border:    #2a2d3e;
+      --accent:    #4f6ef7;
+      --accent2:   #22c55e;
+      --warn:      #f59e0b;
+      --danger:    #ef4444;
+      --text:      #e2e8f0;
+      --muted:     #64748b;
+      --insert-c:  #22c55e;
+      --update-c:  #f59e0b;
+      --delete-c:  #ef4444;
+    }
+
+    body {
+      background: var(--bg);
+      color: var(--text);
+      font-family: 'Segoe UI', system-ui, sans-serif;
+      min-height: 100vh;
+      padding: 24px 16px;
+    }
+
+    /* ── Header ── */
+    header {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      margin-bottom: 28px;
+      flex-wrap: wrap;
+      gap: 12px;
+    }
+
+    .logo { font-size: 1.5rem; font-weight: 700; letter-spacing: .04em; color: var(--accent); }
+    .logo span { color: var(--text); }
+
+    .status-badge {
+      display: flex; align-items: center; gap: 6px;
+      background: var(--surface); border: 1px solid var(--border);
+      padding: 6px 14px; border-radius: 999px; font-size: .82rem;
+    }
+    .dot {
+      width: 8px; height: 8px; border-radius: 50%;
+      background: var(--muted);
+      transition: background .3s;
+    }
+    .dot.live { background: var(--accent2); box-shadow: 0 0 6px var(--accent2); }
+
+    /* ── Grid layout ── */
+    .grid {
+      display: grid;
+      grid-template-columns: 380px 1fr;
+      gap: 20px;
+      align-items: start;
+    }
+    @media (max-width: 800px) { .grid { grid-template-columns: 1fr; } }
+
+    /* ── Cards ── */
+    .card {
+      background: var(--surface);
+      border: 1px solid var(--border);
+      border-radius: 12px;
+      overflow: hidden;
+    }
+    .card-header {
+      padding: 14px 18px;
+      border-bottom: 1px solid var(--border);
+      font-size: .78rem;
+      font-weight: 600;
+      letter-spacing: .08em;
+      text-transform: uppercase;
+      color: var(--muted);
+      display: flex; align-items: center; justify-content: space-between;
+    }
+    .card-header span { color: var(--accent); font-size: .82rem; }
+    .card-body { padding: 18px; }
+
+    /* ── Form ── */
+    label { display: block; font-size: .8rem; color: var(--muted); margin-bottom: 4px; margin-top: 14px; }
+    label:first-of-type { margin-top: 0; }
+
+    input, select {
+      width: 100%; padding: 9px 12px;
+      background: var(--bg); border: 1px solid var(--border);
+      border-radius: 8px; color: var(--text); font-size: .9rem;
+      transition: border-color .2s;
+    }
+    input:focus, select:focus { outline: none; border-color: var(--accent); }
+
+    .btn-row { display: flex; gap: 8px; margin-top: 18px; flex-wrap: wrap; }
+
+    button {
+      flex: 1; padding: 9px 14px; border: none; border-radius: 8px;
+      font-size: .85rem; font-weight: 600; cursor: pointer; transition: opacity .15s;
+    }
+    button:hover { opacity: .85; }
+
+    .btn-primary  { background: var(--accent);  color: #fff; }
+    .btn-warning  { background: var(--warn);    color: #1a1000; }
+    .btn-danger   { background: var(--danger);  color: #fff; }
+
+    /* ── Event feed ── */
+    .event-feed { max-height: 320px; overflow-y: auto; padding: 12px; display: flex; flex-direction: column; gap: 8px; }
+    .event-feed:empty::after { content: 'No events yet — make a change above'; color: var(--muted); font-size: .85rem; padding: 8px; }
+
+    .event-item {
+      border-left: 3px solid var(--border);
+      padding: 10px 12px;
+      background: var(--bg);
+      border-radius: 0 8px 8px 0;
+      font-size: .84rem;
+    }
+    .event-item.INSERT { border-left-color: var(--insert-c); }
+    .event-item.UPDATE { border-left-color: var(--update-c); }
+    .event-item.DELETE { border-left-color: var(--delete-c); }
+
+    .event-meta { display: flex; align-items: center; gap: 8px; margin-bottom: 5px; }
+    .event-badge {
+      font-size: .7rem; font-weight: 700; padding: 2px 7px;
+      border-radius: 4px; letter-spacing: .06em;
+    }
+    .event-badge.INSERT { background: #14532d; color: var(--insert-c); }
+    .event-badge.UPDATE { background: #451a03; color: var(--warn); }
+    .event-badge.DELETE { background: #450a0a; color: var(--danger); }
+
+    .event-time { color: var(--muted); font-size: .75rem; margin-left: auto; }
+
+    .event-row { color: var(--text); }
+    .event-row strong { color: var(--accent); }
+
+    /* ── Orders table ── */
+    .table-wrap { overflow-x: auto; }
+
+    table { width: 100%; border-collapse: collapse; font-size: .85rem; }
+    thead th {
+      text-align: left; padding: 10px 14px;
+      font-size: .74rem; font-weight: 600; letter-spacing: .07em;
+      text-transform: uppercase; color: var(--muted);
+      border-bottom: 1px solid var(--border);
+    }
+    tbody tr { transition: background .15s; }
+    tbody tr:hover { background: rgba(79,110,247,.06); }
+    tbody td { padding: 10px 14px; border-bottom: 1px solid var(--border); vertical-align: middle; }
+    tbody tr:last-child td { border-bottom: none; }
+
+    .status-pill {
+      display: inline-flex; align-items: center; gap: 5px;
+      padding: 3px 10px; border-radius: 999px; font-size: .75rem; font-weight: 600;
+    }
+    .status-pill.pending   { background: #1c1002; color: var(--warn); border: 1px solid #92400e; }
+    .status-pill.shipped   { background: #0c1a3e; color: #93c5fd;   border: 1px solid #1e40af; }
+    .status-pill.delivered { background: #052e16; color: var(--insert-c); border: 1px solid #15803d; }
+
+    .action-btn {
+      padding: 4px 10px; font-size: .78rem; border-radius: 6px;
+      cursor: pointer; border: 1px solid var(--border);
+      background: transparent; color: var(--text); margin-right: 4px;
+      transition: background .15s, border-color .15s;
+    }
+    .action-btn:hover { background: var(--border); }
+
+    .empty-row td { text-align: center; color: var(--muted); padding: 32px; }
+
+    /* ── Toast ── */
+    #toast {
+      position: fixed; bottom: 24px; right: 24px;
+      background: var(--surface); border: 1px solid var(--border);
+      padding: 12px 18px; border-radius: 10px; font-size: .85rem;
+      opacity: 0; transform: translateY(8px);
+      transition: all .25s; pointer-events: none; z-index: 99;
+      max-width: 300px;
+    }
+    #toast.show { opacity: 1; transform: translateY(0); }
+  </style>
+</head>
+<body>
+
+<header>
+  <div class="logo">APT <span>Order Tracker</span></div>
+  <div class="status-badge">
+    <div class="dot" id="wsDot"></div>
+    <span id="wsLabel">Connecting…</span>
+  </div>
+</header>
+
+<div class="grid">
+
+  <!-- ── Left column: form + event feed ── -->
+  <div style="display:flex;flex-direction:column;gap:20px;">
+
+    <!-- Form -->
+    <div class="card">
+      <div class="card-header">⚡ Manage Orders</div>
+      <div class="card-body">
+
+        <label for="fCustomer">CUSTOMER NAME</label>
+        <input id="fCustomer" type="text" placeholder="e.g. Alice Johnson" />
+
+        <label for="fProduct">PRODUCT NAME</label>
+        <input id="fProduct" type="text" placeholder="e.g. Laptop Pro 15" />
+
+        <label for="fStatus">STATUS</label>
+        <select id="fStatus">
+          <option value="pending">pending</option>
+          <option value="shipped">shipped</option>
+          <option value="delivered">delivered</option>
+        </select>
+
+        <label for="fId">ORDER ID <small style="color:var(--muted)">(for Update / Delete)</small></label>
+        <input id="fId" type="number" placeholder="Enter order ID" min="1" />
+
+        <div class="btn-row">
+          <button class="btn-primary"  onclick="placeOrder()">＋ Insert</button>
+          <button class="btn-warning"  onclick="updateOrder()">✎ Update</button>
+          <button class="btn-danger"   onclick="deleteOrder()">✕ Delete</button>
+        </div>
+      </div>
+    </div>
+
+    <!-- Live event feed -->
+    <div class="card">
+      <div class="card-header">
+        ⚡ Live DB Events
+        <span id="eventCount">0 events</span>
+      </div>
+      <div class="event-feed" id="eventFeed"></div>
+    </div>
+
+  </div>
+
+  <!-- ── Right column: orders table ── -->
+  <div class="card">
+    <div class="card-header">
+      Orders Table
+      <span id="orderCount">— rows</span>
+    </div>
+    <div class="table-wrap">
+      <table>
+        <thead>
+          <tr>
+            <th>ID</th>
+            <th>Customer Name</th>
+            <th>Product Name</th>
+            <th>Status</th>
+            <th>Updated At</th>
+            <th>Actions</th>
+          </tr>
+        </thead>
+        <tbody id="ordersBody">
+          <tr class="empty-row"><td colspan="6">Loading…</td></tr>
+        </tbody>
+      </table>
+    </div>
+  </div>
+
+</div>
+
+<div id="toast"></div>
+
+<script>
+  // ── State ──────────────────────────────────────────────────────────────────
+  let eventCount = 0;
+
+  // ── WebSocket ──────────────────────────────────────────────────────────────
+  const protocol = location.protocol === 'https:' ? 'wss' : 'ws';
+  const ws = new WebSocket(`${protocol}://${location.host}`);
+
+  const dot   = document.getElementById('wsDot');
+  const label = document.getElementById('wsLabel');
+
+  ws.onopen = () => {
+    dot.classList.add('live');
+    label.textContent = 'LIVE';
+  };
+
+  ws.onclose = () => {
+    dot.classList.remove('live');
+    label.textContent = 'Disconnected';
+  };
+
+  ws.onmessage = (e) => {
+    const msg = JSON.parse(e.data);
+
+    if (msg.type === 'db_change') {
+      addEvent(msg.event, msg.data);
+      // Re-fetch the full table so all clients stay in sync
+      loadOrders();
+    }
+  };
+
+  // ── Event feed ─────────────────────────────────────────────────────────────
+  function addEvent(eventType, row) {
+    eventCount++;
+    document.getElementById('eventCount').textContent = `${eventCount} event${eventCount !== 1 ? 's' : ''}`;
+
+    const feed = document.getElementById('eventFeed');
+    const time = new Date().toLocaleTimeString('en-IN', { hour12: false });
+
+    const item = document.createElement('div');
+    item.className = `event-item ${eventType}`;
+    item.innerHTML = `
+      <div class="event-meta">
+        <span class="event-badge ${eventType}">${eventType}</span>
+        <span class="event-time">${time}</span>
+      </div>
+      <div class="event-row">
+        <strong>#${row.id}</strong>
+        ${row.customer_name} · ${row.product_name}
+        <span class="status-pill ${row.status || ''}" style="margin-left:6px">${row.status || '—'}</span>
+      </div>`;
+
+    feed.prepend(item);
+
+    // Keep feed tidy (max 50 events shown)
+    while (feed.children.length > 50) feed.removeChild(feed.lastChild);
+  }
+
+  // ── Load & render orders table ─────────────────────────────────────────────
+  async function loadOrders() {
+    const res  = await fetch('/api/orders');
+    const rows = await res.json();
+
+    document.getElementById('orderCount').textContent = `${rows.length} row${rows.length !== 1 ? 's' : ''}`;
+
+    const tbody = document.getElementById('ordersBody');
+
+    if (rows.length === 0) {
+      tbody.innerHTML = '<tr class="empty-row"><td colspan="6">No orders yet</td></tr>';
+      return;
+    }
+
+    tbody.innerHTML = rows.map(r => `
+      <tr>
+        <td>${r.id}</td>
+        <td>${esc(r.customer_name)}</td>
+        <td>${esc(r.product_name)}</td>
+        <td><span class="status-pill ${r.status}">${r.status}</span></td>
+        <td style="color:var(--muted);font-size:.78rem">${new Date(r.updated_at).toLocaleString('en-IN')}</td>
+        <td>
+          <button class="action-btn" onclick="prefillUpdate(${r.id},'${esc(r.customer_name)}','${esc(r.product_name)}','${r.status}')">Edit</button>
+          <button class="action-btn" style="color:var(--danger)" onclick="quickDelete(${r.id})">Delete</button>
+        </td>
+      </tr>`).join('');
+  }
+
+  function esc(s) {
+    return String(s).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;');
+  }
+
+  // ── CRUD helpers ──────────────────────────────────────────────────────────
+  async function placeOrder() {
+    const customer_name = document.getElementById('fCustomer').value.trim();
+    const product_name  = document.getElementById('fProduct').value.trim();
+    const status        = document.getElementById('fStatus').value;
+
+    if (!customer_name || !product_name) return toast('Customer name and product name are required');
+
+    const res = await fetch('/api/orders', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ customer_name, product_name, status }),
+    });
+
+    if (!res.ok) { const e = await res.json(); return toast(e.error, true); }
+    toast('Order inserted ✓');
+    clearForm();
+  }
+
+  async function updateOrder() {
+    const id = document.getElementById('fId').value;
+    if (!id) return toast('Enter an Order ID to update');
+
+    const body = {};
+    const cn = document.getElementById('fCustomer').value.trim();
+    const pn = document.getElementById('fProduct').value.trim();
+    const st = document.getElementById('fStatus').value;
+
+    if (cn) body.customer_name = cn;
+    if (pn) body.product_name  = pn;
+    if (st) body.status        = st;
+
+    if (!Object.keys(body).length) return toast('Fill in at least one field to update');
+
+    const res = await fetch(`/api/orders/${id}`, {
+      method: 'PATCH',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify(body),
+    });
+
+    if (!res.ok) { const e = await res.json(); return toast(e.error, true); }
+    toast('Order updated ✓');
+    clearForm();
+  }
+
+  async function deleteOrder() {
+    const id = document.getElementById('fId').value;
+    if (!id) return toast('Enter an Order ID to delete');
+
+    const res = await fetch(`/api/orders/${id}`, { method: 'DELETE' });
+    if (!res.ok) { const e = await res.json(); return toast(e.error, true); }
+    toast('Order deleted ✓');
+    clearForm();
+  }
+
+  async function quickDelete(id) {
+    if (!confirm(`Delete order #${id}?`)) return;
+    const res = await fetch(`/api/orders/${id}`, { method: 'DELETE' });
+    if (!res.ok) { const e = await res.json(); return toast(e.error, true); }
+    toast(`Order #${id} deleted ✓`);
+  }
+
+  function prefillUpdate(id, cn, pn, st) {
+    document.getElementById('fId').value       = id;
+    document.getElementById('fCustomer').value = cn;
+    document.getElementById('fProduct').value  = pn;
+    document.getElementById('fStatus').value   = st;
+  }
+
+  function clearForm() {
+    ['fCustomer','fProduct','fId'].forEach(id => document.getElementById(id).value = '');
+    document.getElementById('fStatus').value = 'pending';
+  }
+
+  // ── Toast ─────────────────────────────────────────────────────────────────
+  let toastTimer;
+  function toast(msg, isError = false) {
+    const el = document.getElementById('toast');
+    el.textContent = msg;
+    el.style.borderColor = isError ? 'var(--danger)' : 'var(--accent2)';
+    el.classList.add('show');
+    clearTimeout(toastTimer);
+    toastTimer = setTimeout(() => el.classList.remove('show'), 3000);
+  }
+
+  // ── Init ──────────────────────────────────────────────────────────────────
+  loadOrders();
+</script>
+
+</body>
+</html>
